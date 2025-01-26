@@ -1,13 +1,13 @@
+//
+// Created by nekok on 24-7-22.
+//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libintl.h>
-#include <locale.h>
+#include "include/password.h"
+#include "include/crypt.h"
 
-#include "password.h"
-#include "crypt.h"
-
-#define _(STRING) gettext(STRING)
 
 char *_fgets(char data[], const int count, FILE *file)
 {
@@ -18,139 +18,10 @@ char *_fgets(char data[], const int count, FILE *file)
     return data;
 }
 
-void generatepw(const char *sn_bf) {
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("RPG"),_("Staring Password generate."));
-    char hash[33] = {0};// 32 十六进制字符 + null 终止符
-    passwd_generate(sn_bf, hash, sizeof(hash));// 生成密码
-    if (strlen(hash) != 32) {
-        printf("[\033[1;31m%s\033[0m][%s] %s\n",_("ERROR"),_("RPG"),_("Password generate faild."));
-    }else {
-        char password[17] = {0};
-        strncpy(password, hash, 16);
-        printf("[\033[1;32m%s\033[0m][%s] %s: \033[1m\033[4m\033[1;33m%s\033[0m \n",_("INFO"),_("RPG"),_("Password"),password);
-    }
-}
-
-void pg() {
-    char sn_bf[20];
-    printf("\n");
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("RPG"),_("You selected Root Password Generate."));
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("RPG"),_("Please enter your serial number."));
-    printf("[\033[1;32m%s\033[0m][%s] %s:",_("INFO"),_("RPG"),_("SN"));
-    _fgets(sn_bf,20,stdin);
-    generatepw(sn_bf);
-    printf("[\033[1;32m%s\033[0m][%s] \033[5m%s\033[0m\n",_("INFO"),_("RPG"),_("Press any key to continue."));
-}
-
-void df() {
-    char path[4096]={0};
-    printf("\n");
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("DF"),_("You selected Decrypt Firmware."));
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("DF"),_("Please enter your firmware path."));
-    printf("[\033[1;32m%s\033[0m][%s] %s:",_("INFO"),_("DF"),_("PATH"));
-    _fgets(path,4096,stdin);
-    if(firmware_decrypt(path)) {
-        printf("[\033[1;31m%s\033[0m][%s] %s.\n",_("ERROR"),_("DF"),_("Decrypt firmware faild."));
-    } else {
-        printf("[\033[1;32m%s\033[0m][%s] %s.\n",_("INFO"),_("DF"),_("Decrypt firmware succeed."));
-    }
-    printf("[\033[1;32m%s\033[0m][%s] \033[5m%s\033[0m\n",_("INFO"),_("DF"),_("Press any key to continue."));
-}
-
-void ef() {
-    char path[4096]={0};
-    printf("\n");
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("EF"),_("You selected Encrypt Firmware."));
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("EF"),_("Please enter your firmware path."));
-    printf("[\033[1;32m%s\033[0m][%s] %s:",_("INFO"),_("EF"),_("PATH"));
-    _fgets(path,4096,stdin);
-    if(firmware_encrypt(path)) {
-        printf("[\033[1;31m%s\033[0m][%s] %s\n",_("ERROR"),_("EF"),_("Encrypt firmware faild."));
-    } else {
-        printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("EF"),_("Encrypt firmware succeed."));
-    }
-    printf("[\033[1;32m%s\033[0m][%s] \033[5m%s\033[0m\n",_("INFO"),_("EF"),_("Press any key to continue."));
-}
-
-void db() {
-    
-}
-
-void eb() {
-    
-}
-
-void windows_cmd_support_utf8(void)
-{
+int main() {
 #ifdef WIN32
     system("chcp 65001 & cls"); //cls 用来清除 chcp 的输出
 #endif
-}
-
-void select_language() {
-    printf("\033[H\033[2J\033[3J");
-    char input_bf_lang[2];
-    const int choice_lang;
-    printf("%s\n",_("Please select a language."));
-    printf("1. %s\n",_("English"));
-    printf("2. %s\n",_("Chinese Simplified"));
-    printf("%s\n",_("No input will automatically select language."));
-    printf("%s: ",_("Enter your choice"));
-    _fgets(input_bf_lang,3,stdin);
-    sscanf(input_bf_lang,"%d",&choice_lang);
-    switch (choice_lang) {
-        case 1: setlocale (LC_ALL, "en");
-        break;
-        case 2: setlocale (LC_ALL, "zh_CN");
-        break;
-        default: setlocale (LC_ALL, "");
-        break;
-    }
-}
-
-void toolkit_settings() {
-    printf("\n");
-    char input_bf_lang[2];
-    const int choice_lang;
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("TS"),_("You selected Toolkit Setting."));
-    printf("[\033[1;32m%s\033[0m][%s] %s\n",_("INFO"),_("TS"),_("Choose one function index form below menus"));
-    printf("\n");
-    printf("[\033[1;32m%s\033[0m][%s] 1. %s\n",_("INFO"),_("TS"),_("Language"));
-    printf("\n");
-    printf("[\033[1;32m%s\033[0m][%s] %s:",_("INFO"),_("TS"),_("Enter your choice"));
-    _fgets(input_bf_lang,3,stdin);
-    sscanf(input_bf_lang,"%d",&choice_lang);
-    switch (choice_lang) {
-        case 1: select_language();
-                break;
-        default: break;
-    }
-}
-
-int main() {
-    windows_cmd_support_utf8();
-    setlocale (LC_ALL, "en");
-    bindtextdomain ("main",  "Lang");
-    textdomain ("main");
-    char input_bf_lang[2];
-    const int choice_lang;
-    printf("%s\n",_("Please select a language."));
-    printf("\n");
-    printf("1. %s\n",_("English"));
-    printf("2. %s\n",_("Chinese Simplified"));
-    printf("\n");
-    printf("%s\n",_("No input will automatically select language."));
-    printf("%s: ",_("Enter your choice"));
-    _fgets(input_bf_lang,3,stdin);
-    sscanf(input_bf_lang,"%d",&choice_lang);
-    switch (choice_lang) {
-        case 1: setlocale (LC_ALL, "en");
-        break;
-        case 2: setlocale (LC_ALL, "zh_CN");
-        break;
-        default: setlocale (LC_ALL, "");
-        break;
-    }
     while (1) {
         printf("\033[H\033[2J\033[3J");
         printf("    ____        _   _ _         __________  ____  __    __ __ __________\n"
@@ -161,36 +32,69 @@ int main() {
             "             /___/                                                      \n"
 
             "\n");
-        printf("\033[1;36m%s\033[0m \033[1;33m%s\033[0m \033[1;35m%s\033[0m\n%s\n",_("NekokeCore@2024"),_("Version 1.0.0"),_("Made with Love"),_("Welcome to use Ruijie Toolkit."));
+        printf("\033[1;36m版权所有©2024-2025 Ashley Lee (李淑贤)\033[0m \n\033[1;33m版本: Private-1.0.1\033[0m \n欢迎使用锐捷工具箱！\n");
         printf("\n");
         char input_bf[2];
         const int choice;
-        printf("%s\n",_("Choose one function index form below menus"));
+        printf("请输入模块序号: \n");
         printf("\n");
-        printf("1. %s\n",_("Root Password Generate"));
-        printf("2. %s\n",_("Decrypt Firmware"));
-        printf("3. %s\n",_("Encrypt Firmware"));
-        printf("4. %s\n",_("Decrypt Backup"));
-        printf("5. %s\n",_("Encrypt Backup"));
-        printf("6. %s\n",_("Tookit Setting"));
-        printf("0. %s\n",_("Exit"));
+        printf("1. 密码生成模块\n");
+        printf("2. 固件解密模块\n");
+        printf("3. 固件加密模块\n");
+        printf("0. 退出\n");
         printf("\n");
-        printf("%s: ",_("Enter your choice"));
+        printf("请选择: ");
         _fgets(input_bf,3,stdin);
         sscanf(input_bf,"%d",&choice);
         switch (choice) {
-            case 1: pg();
+            case 1: char sn_bf[20];
+                    printf("\n");
+                    printf("[\033[1;32m信息\033[0m][密码生成器] 您选择了密码生成模块。\n");
+                    printf("[\033[1;32m信息\033[0m][密码生成器] 请输入您设备的SN (Serial Number)。\n");
+                    printf("[\033[1;32m信息\033[0m][密码生成器] SN:");
+                    _fgets(sn_bf,20,stdin);
+                    printf("[\033[1;32m信息\033[0m][密码生成器] 开始密码生成任务。\n");
+                    char passwd_generate_hash[33] = {0};// 32 十六进制字符 + null 终止符
+                    passwd_generate(sn_bf, passwd_generate_hash, sizeof(passwd_generate_hash));// 生成密码
+                    if (strlen(passwd_generate_hash) != 32) {
+                        printf("[\033[1;31m错误\033[0m][密码生成器] 密码生成任务失败！\n");
+                    }else {
+                        char generated_password[17] = {0};
+                        strncpy(generated_password, passwd_generate_hash, 16);
+                        printf("[\033[1;32m信息\033[0m][密码生成器] 密码: \033[1m\033[4m\033[1;33m%s\033[0m 。\n",generated_password);
+                    }
+                    printf("[\033[1;32m信息\033[0m][密码生成器] \033[5m请按任意键继续\033[0m\n");
                     getchar();
                     break;
-            case 2: df();
+
+            case 2: char firmware_decrypt_path[4096]={0};
+                    printf("\n");
+                    printf("[\033[1;32m信息\033[0m][解密固件] 您选择了解密固件模块。\n");
+                    printf("[\033[1;32m信息\033[0m][解密固件] 请输入固件路径。\n");
+                    printf("[\033[1;32m信息\033[0m][解密固件] 路径:");
+                    _fgets(firmware_decrypt_path,4096,stdin);
+                    if(firmware_decrypt(firmware_decrypt_path)) {
+                        printf("[\033[1;31m错误\033[0m][解密固件] 固件解密失败！\n");
+                    } else {
+                        printf("[\033[1;32m信息\033[0m][解密固件] 固件解密成功。\n");
+                    }
+                    printf("[\033[1;32m信息\033[0m][解密固件] \033[5m请按任意键继续\033[0m\n");
                     getchar();
                     break;
-            case 3: ef();
+
+            case 3: char firmware_encrypt_path[4096]={0};
+                    printf("\n");
+                    printf("[\033[1;32m信息\033[0m][加密固件] 您选择了加密固件模块。\n");
+                    printf("[\033[1;32m信息\033[0m][加密固件] 请输入固件路径。\n");
+                    printf("[\033[1;32m信息\033[0m][加密固件] 路径:");
+                    _fgets(firmware_encrypt_path,4096,stdin);
+                    if(firmware_encrypt(firmware_encrypt_path)) {
+                        printf("[\033[1;31m错误\033[0m][加密固件] 固件加密失败！\n");
+                    } else {
+                        printf("[\033[1;32m信息\033[0m][加密固件] 固件加密成功。\n");
+                    }
+                    printf("[\033[1;32m信息\033[0m][加密固件] \033[5m请按任意键继续\033[0m\n");
                     getchar();
-                    break;
-            case 4: break;
-            case 5: break;
-            case 6: toolkit_settings();
                     break;
             case 0: return 0;
             default: break;
