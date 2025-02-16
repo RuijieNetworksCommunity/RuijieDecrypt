@@ -73,7 +73,8 @@ int main() {
                     printf("[\033[1;32m信息\033[0m][解密固件] 请输入固件路径。\n");
                     printf("[\033[1;32m信息\033[0m][解密固件] 路径:");
                     _fgets(firmware_decrypt_path,4096,stdin);
-                    if(firmware_decrypt(firmware_decrypt_path)) {
+                    const int check = firmware_decrypt(firmware_decrypt_path);
+                    if(check) {
                         printf("[\033[1;31m错误\033[0m][解密固件] 固件解密失败！\n");
                     } else {
                         printf("[\033[1;32m信息\033[0m][解密固件] 固件解密成功。\n");

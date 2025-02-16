@@ -3,7 +3,7 @@ project(Ruijie_Toolkit C)
 set(CMAKE_C_STANDARD 11)
 set(PROJECT_VERSION 1.0.1)
 
-file(GLOB_RECURSE INCLUDES "include/*.h" "include/*.hpp" "include/*.cpp")
+file(GLOB_RECURSE INCLUDES "include/*.h" "include/*.c")
 aux_source_directory("./src" SOURCES)
 
 # Output exe
