@@ -11,7 +11,7 @@
 
 int key1 = FW_KEY1, key2 = FW_KEY2;
 
-void decrypt(const uint8_t *enc_buf, uint8_t *dec_buf, const int length)
+void fw_crypt(const uint8_t *in_buf, uint8_t *out_buf, const int length)
 {
 	for (int i = 0; i < length; i++)
 	{
@@ -24,28 +24,12 @@ void decrypt(const uint8_t *enc_buf, uint8_t *dec_buf, const int length)
 		uint8_t key = 0;
 		for (int k = 0; k < 8; k++)
 			key |= *((uint8_t *)&key1 + k) << k;
-		if(dec_buf != NULL && enc_buf != NULL ) *(dec_buf + i) = *(enc_buf + i) ^ key;
-	}
-}
-
-void encrypt(const uint8_t *dec_buf, uint8_t *enc_buf, const int length)
-{
-	for (int i = 0; i < length; i++)
-	{
-		const int sum = (uint8_t)key1 + (uint8_t)key2 + BYTE(key2, 1) + BYTE(key2, 2);
-		BYTE(key2, sizeof(key2)/sizeof(uint8_t)-1) = sum % 2;
-        
-		for (int j = 0; j < 6; j++)
-			*((uint8_t *)&key1 + j) = *((uint8_t *)&key1 + j + 1);
-        
-		uint8_t key = 0;
-		for (int k = 0; k < 8; k++)
-			key |= *((uint8_t *)&key1 + k) << k;
-		if(enc_buf != NULL && dec_buf != NULL) *(enc_buf + i) = *(dec_buf + i) ^ key;
+		if(in_buf != NULL && out_buf != NULL ) *(out_buf + i) = *(in_buf + i) ^ key;
 	}
 }
 
 int firmware_decrypt(const char *enc_path) {
+	int ret = 0;
 	char *dec_path = malloc(strlen(enc_path) + 0x10);
 	strcpy(dec_path, enc_path);
 	strcat(dec_path, ".decrypted");
@@ -53,8 +37,8 @@ int firmware_decrypt(const char *enc_path) {
 	const int stat_fd = stat(enc_path, &stat_buf);
 	if (stat_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][解密固件] 加密的固件不存在！\n");
-		free(dec_path);
-		return 1;
+		ret = 1;
+		goto err0;
 	}
 	int size = stat_buf.st_size;
 
@@ -64,31 +48,20 @@ int firmware_decrypt(const char *enc_path) {
 	FILE *enc_fd = fopen(enc_path, "rb");
 	if (enc_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][解密固件] 无法读取加密的固件！\n");
-		free(enc_buf);
-		free(dec_buf);
-		fclose(enc_fd);
-		free(dec_path);
-		return 1;
+		ret = 1;
+		goto err1;
 	}
 	FILE *dec_fd = fopen(dec_path, "wb");
 	if (dec_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][解密固件] 无法创建解密的固件！\n");
-		free(enc_buf);
-		free(dec_buf);
-		fclose(enc_fd);
-		fclose(dec_fd);
-		free(dec_path);
-		return 1;
+		ret = 1;
+		goto err2;
 	}
 	//去掉固件信息头“upgrade_crypt_v1!@2021”
 	if (fread(enc_buf, 1,22,enc_fd) != 22) {
 		printf("[\033[1;31m错误\033[0m][解密固件] 固件解密时发生未知错误！\n");
-		free(enc_buf);
-		free(dec_buf);
-		fclose(enc_fd);
-		fclose(dec_fd);
-		free(dec_path);
-		return 1;
+		ret = 1;
+		goto err2;
 	}
 	size -= 22;
 
@@ -102,35 +75,31 @@ int firmware_decrypt(const char *enc_path) {
 		
 		if (fread(enc_buf, 1,len,enc_fd) != len) {
 			printf("[\033[1;31m错误\033[0m][解密固件] 加密的固件数据载入内存失败！\n");
-			free(enc_buf);
-			free(dec_buf);
-			fclose(enc_fd);
-			fclose(dec_fd);
-			free(dec_path);
-			return 1;
+			ret = 1;
+			goto err2;
 		}
-		decrypt(enc_buf, dec_buf, len);
+		fw_crypt(enc_buf, dec_buf, len);
 		if (fwrite(dec_buf, 1,len,dec_fd) != len) {
 			printf("[\033[1;31m错误\033[0m][解密固件] 解密的固件数据写入硬盘失败！\n");
-			free(enc_buf);
-			free(dec_buf);
-			fclose(enc_fd);
-			fclose(dec_fd);
-			free(dec_path);
-			return 1;
+			ret = 1;
+			goto err2;
 		}
 		size -= len;
 	}
-	
-	free(enc_buf);
-	free(dec_buf);
-	fclose(enc_fd);
+
+err2:
 	fclose(dec_fd);
+err1:
+	fclose(enc_fd);
+	free(dec_buf);
+	free(enc_buf);
+err0:
 	free(dec_path);
-	return 0;
+	return ret;
 }
 
 int firmware_encrypt(const char *dec_path) {
+	int ret = 0;
 	char *enc_path = malloc(strlen(dec_path) + 0x10);
 	strcpy(enc_path, dec_path);
 	strcat(enc_path, ".encrypted");
@@ -138,8 +107,8 @@ int firmware_encrypt(const char *dec_path) {
 	const int stat_fd = stat(dec_path, &stat_buf);
 	if (stat_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][加密固件] 解密的固件不存在！\n");
-		free(enc_path);
-		return 1;
+		ret = 1;
+		goto err0;
 	}
 	int size = stat_buf.st_size;
 
@@ -149,21 +118,14 @@ int firmware_encrypt(const char *dec_path) {
 	FILE *dec_fd = fopen(dec_path, "rb");
 	if (dec_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][加密固件] 无法读取解密的固件！\n");
-		free(enc_buf);
-		free(dec_buf);
-		fclose(dec_fd);
-		free(enc_path);
-		return 1;
+		ret = 1;
+		goto err1;
 	}
 	FILE *enc_fd = fopen(enc_path, "wb");
 	if (enc_fd < 0) {
 		printf("[\033[1;31m错误\033[0m][加密固件] 无法创建加密的固件!\n");
-		free(enc_buf);
-		free(dec_buf);
-		fclose(dec_fd);
-		fclose(enc_fd);
-		free(enc_path);
-		return 1;
+		ret = 1;
+		goto err2;
 	}
 
 	fwrite(FW_HEADER, strlen(FW_HEADER), 1, enc_fd);
@@ -178,30 +140,25 @@ int firmware_encrypt(const char *dec_path) {
 		
 		if (fread(enc_buf, 1,len,dec_fd) != len) {
 			printf("[\033[1;31m错误\033[0m][加密固件] 解密的固件数据载入内存失败！\n");
-			free(enc_buf);
-			free(dec_buf);
-			fclose(dec_fd);
-			fclose(enc_fd);
-			free(enc_path);
-			return 1;
+			ret = 1;
+			goto err2;
 		}
-		decrypt(enc_buf, dec_buf, len);
+		fw_crypt(enc_buf, dec_buf, len);
 		if (fwrite(dec_buf, 1,len,enc_fd) != len) {
 			printf("[\033[1;31m错误\033[0m][加密固件] 加密的固件数据写入硬盘失败！\n");
-			free(enc_buf);
-			free(dec_buf);
-			fclose(dec_fd);
-			fclose(enc_fd);
-			free(enc_path);
-			return 1;
+			ret = 1;
+			goto err2;
 		}
 		size -= len;
 	}
-	
+
+err2:
+	fclose(enc_fd);
+err1:
+	fclose(dec_fd);
 	free(enc_buf);
 	free(dec_buf);
-	fclose(dec_fd);
-	fclose(enc_fd);
+err0:
 	free(enc_path);
-	return 0;
+	return ret;
 }
